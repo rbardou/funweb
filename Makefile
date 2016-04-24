@@ -5,9 +5,13 @@ OCAMLBUILD := $(OCAMLBUILD) -tag annot
 OCAMLBUILD := $(OCAMLBUILD) -I src
 
 default:
-	$(OCAMLBUILD) src/funweb.cma examples/convert.byte examples/login.byte
+	$(OCAMLBUILD) src/funweb.cma \
+		examples/convert.byte \
+		examples/login.byte \
+		examples/save.byte
 	js_of_ocaml _build/examples/convert.byte -o _build/examples/convert.js
 	js_of_ocaml _build/examples/login.byte -o _build/examples/login.js
+	js_of_ocaml _build/examples/save.byte -o _build/examples/save.js
 
 clean:
 	rm -rf _build

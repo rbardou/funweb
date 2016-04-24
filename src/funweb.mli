@@ -3,9 +3,12 @@ type group
 
 module Debug:
 sig
+  (** Debugging tools (logging functions). *)
+
+  (** Display a message in a blocking window. *)
   val alert: string -> unit
 
-  (** The following functions access the FireFox console. *)
+  (** {2 Firefox Console} *)
 
   val log: string -> unit
   val debug: string -> unit
@@ -21,6 +24,34 @@ sig
 
   (** Stop a timer given its identifier and display its duration. *)
   val time_end: string -> unit
+end
+
+module Base64:
+sig
+  (** Base64 encoding. *)
+
+  (** Encode in URL-friendly Base64.
+
+      Characters which are used are [A..Za..z0..9-_], and [=] for padding
+      if [pad] is [true]. By default [pad] is [false], so no padding is used,
+      which is more URL-friendly. *)
+  val encode: ?pad: bool -> string -> string
+
+  (** Invert of [encode]. Accepts both padded and non-padded inputs. *)
+  val decode: string -> string
+end
+
+module Cookie:
+sig
+  (** Cookie management. *)
+
+  (** Set or replace a cookie.
+      [expires] is in seconds starting from the current time. *)
+  val set: name: string -> value: string -> ?expires: float ->
+    ?domain: string -> ?path: string -> ?secure: bool -> unit -> unit
+
+  (** Get the value of a cookie given its name. *)
+  val get: string -> string
 end
 
 (** Raise this from event handlers to cancel the default behavior.
@@ -39,10 +70,22 @@ sig
   val float: float typ
   val string: string typ
 
+  type cookie =
+    {
+      name: string;
+      expires: float option;
+      domain: string option;
+      path: string option;
+      secure: bool;
+    }
+
   type save =
     | Volatile
-    | Cookie of string
+    | Cookie of cookie
     | URL
+
+  val cookie: ?expires: float -> ?domain: string -> ?path: string ->
+    ?secure: bool -> string -> save
 
   type ('a, 'b) t
   type e = E: _ t -> e
