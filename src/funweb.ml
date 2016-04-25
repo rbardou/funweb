@@ -1,6 +1,32 @@
 type single
 type group
 
+let opt_iter o f =
+  match o with
+    | None -> ()
+    | Some x -> f x
+
+let opt_map o f =
+  match o with
+    | None -> None
+    | Some x -> Some (f x)
+
+let split_string sep str =
+  let len = String.length str in
+  let position = ref len in
+  let end_of_sub = ref len in
+  let result = ref [] in
+  while !position > 0 do
+    let pos_before = !position in
+    decr position;
+    if str.[!position] = sep then
+      let sub = String.sub str pos_before (!end_of_sub - pos_before) in
+      end_of_sub := !position;
+      result := sub :: !result
+  done;
+  let sub = String.sub str 0 !end_of_sub in
+  sub :: !result
+
 module Debug =
 struct
   let alert x = Dom_html.window##alert(Js.string x)
@@ -154,6 +180,34 @@ struct
       | value -> value
 end
 
+module URL_hash =
+struct
+  let get () =
+    let hash = Dom_html.window##location##hash |> Js.to_string in
+    if hash = "" then
+      ""
+    else if hash.[0] = '#' then
+      String.sub hash 1 (String.length hash - 1)
+    else
+      hash
+
+  (* [setting] is used to prevent [set] from triggering [on_change]. *)
+  let setting = ref false
+
+  let set hash =
+    setting := true;
+    try
+      Dom_html.window##location##hash <- Js.string hash;
+      setting := false
+    with exn ->
+      setting := false;
+      raise exn
+
+  let on_change handler =
+    let handler _ = if not !setting then handler (); Js._true in
+    Dom_html.window##onhashchange <- Dom.handler handler
+end
+
 module Base64 =
 struct
   let pad = '='
@@ -237,7 +291,15 @@ struct
     in
     let quads = len / 4 + (if len mod 4 > 0 then 1 else 0) in
     let len = len - pad_count in
-    String.init (quads * 3 - pad_count) @@ fun i ->
+    let silent_pad_count =
+      match len mod 4 with
+        | 0 -> 0
+        | 1 -> 2 (* Invalid Base64 encoding, assume missing byte is 0. *)
+        | 2 -> 2
+        | 3 -> 1
+        | _ -> assert false
+    in
+    String.init (quads * 3 - pad_count - silent_pad_count) @@ fun i ->
     let o = i / 3 * 4 in
     let code =
       match i mod 3 with
@@ -282,16 +344,6 @@ let as_node = function
   | Span x -> (x :> Dom.node Js.t)
   | Form x -> (x :> Dom.node Js.t)
   | Input x -> (x :> Dom.node Js.t)
-
-let opt_iter o f =
-  match o with
-    | None -> ()
-    | Some x -> f x
-
-let opt_map o f =
-  match o with
-    | None -> None
-    | Some x -> Some (f x)
 
 (* Each dynamic start with [up_to_date] set to [true].
    Properties on which it depends have an observer which sets
@@ -420,7 +472,19 @@ struct
 
   type e = E: _ t -> e
 
-  let properties = ref []
+  type properties =
+    {
+      mutable all: e list;
+      mutable cookie: e list;
+      mutable url: e list;
+    }
+
+  let properties =
+    {
+      all = [];
+      cookie = [];
+      url = [];
+    }
 
   let create save typ default kind =
     let property =
@@ -433,7 +497,16 @@ struct
         dynamics = [];
       }
     in
-    properties := E property :: !properties;
+    let e = E property in
+    properties.all <- e :: properties.all;
+    begin match save with
+      | Volatile ->
+          ()
+      | Cookie _ ->
+          properties.cookie <- e :: properties.cookie
+      | URL ->
+          properties.url <- e :: properties.url
+    end;
     property
 
   let single save typ default =
@@ -443,7 +516,9 @@ struct
     create save typ default
       (Group { group_name; attachments = Hashtbl.create 8 })
 
-  let save property =
+  let url_hash_must_be_updated = ref false
+
+  let want_to_save property =
     match property.save with
       | Volatile ->
           ()
@@ -458,17 +533,26 @@ struct
             ~secure: cookie.secure
             ()
       | URL ->
-          ()
+          (* The property will be set after the event handler is done, so that
+             all modified URL properties are saved at the same time. *)
+          url_hash_must_be_updated := true
 
-  let load property =
-    match property.save with
-      | Volatile ->
-          ()
-      | Cookie cookie ->
-          let value = Cookie.get cookie.name |> Base64.decode in
-          property.value <- property.typ.of_string value
-      | URL ->
-          ()
+  let load_cookies () =
+    let load (E property) =
+      match property.save with
+        | Volatile ->
+            ()
+        | Cookie cookie ->
+            let value = Cookie.get cookie.name |> Base64.decode in
+            property.value <- property.typ.of_string value
+        | URL ->
+            ()
+    in
+    List.iter load properties.cookie
+
+  let save_cookies () =
+    let save (E property) = want_to_save property in
+    List.iter save properties.cookie
 
   let get property =
     property.value
@@ -478,7 +562,7 @@ struct
      as this could trigger an event which would set the property again. *)
   let set_and_update_dynamics property value =
     property.value <- value;
-    save property;
+    want_to_save property;
     let update_dynamic dynamic =
       if dynamic.up_to_date then (
         dynamic.up_to_date <- false;
@@ -497,20 +581,38 @@ struct
       | Group { attachments } ->
           Hashtbl.iter (fun _ na -> na.on_set value) attachments
 
+  let save_urls () =
+    let encode (E property) =
+      property.typ.to_string property.value |> Base64.encode
+    in
+    properties.url
+    |> List.map encode
+    |> String.concat "."
+    |> URL_hash.set
+
+  let load_urls () =
+    let rec decode properties subs =
+      match properties, subs with
+        | [], _
+        | _, [] ->
+            ()
+        | E property :: other_properties, sub :: other_subs ->
+            set property (property.typ.of_string (Base64.decode sub));
+            decode other_properties other_subs
+    in
+    decode properties.url (split_string '.' (URL_hash.get ()))
+
   let all () =
-    !properties
+    properties.all
+
+  let iter f =
+    List.iter f properties.all
 
   let reset property =
     set property property.default
 
   let reset_all () =
-    List.iter (fun (E property) -> reset property) (all ())
-
-  let save_all () =
-    List.iter (fun (E property) -> save property) (all ())
-
-  let load_all () =
-    List.iter (fun (E property) -> load property) (all ())
+    iter (fun (E property) -> reset property)
 
   module Symbols =
   struct
@@ -538,6 +640,7 @@ struct
             Js._true
     in
     rebuild_dynamics ();
+    Property.save_urls ();
     continue
 
   let set_on_click node on_click =
@@ -729,26 +832,12 @@ struct
     node
 end
 
-let get_hash () =
-  let hash = Dom_html.window##location##hash |> Js.to_string in
-  if hash = "" then
-    ""
-  else if hash.[0] = '#' then
-    String.sub hash 1 (String.length hash - 1)
-  else
-    hash
-
-let set_hash hash =
-  Dom_html.window##location##hash <- Js.string hash
-
-let on_hash_change handler =
-  let handler _ = handler (); Js._true in
-  Dom_html.window##onhashchange <- Dom.handler handler
-
 let run ?focus create_html =
   let on_load _ =
-    Property.load_all ();
-    Property.save_all (); (* Refresh cookie expiration dates. *)
+    Property.load_cookies ();
+    Property.save_cookies (); (* Refresh cookie expiration dates. *)
+    Property.load_urls ();
+    URL_hash.on_change (fun () -> Property.load_urls (); rebuild_dynamics ());
     let html = create_html () |> as_node in
     let body =
       let elements =

@@ -149,6 +149,9 @@ sig
   (** Get the list of all properties. *)
   val all: unit -> e list
 
+  (** Iterate on all properties. *)
+  val iter: (e -> unit) -> unit
+
   (** Set a property to its default value. *)
   val reset: ('a, 'b) t -> unit
 
