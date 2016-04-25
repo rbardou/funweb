@@ -260,6 +260,8 @@ struct
     in
     table.(code)
 
+  exception Invalid_character
+
   let invert = function
     | 'A' -> 00 | 'B' -> 01 | 'C' -> 02 | 'D' -> 03
     | 'E' -> 04 | 'F' -> 05 | 'G' -> 06 | 'H' -> 07
@@ -277,7 +279,7 @@ struct
     | '0' -> 52 | '1' -> 53 | '2' -> 54 | '3' -> 55
     | '4' -> 56 | '5' -> 57 | '6' -> 58 | '7' -> 59
     | '8' -> 60 | '9' -> 61 | '-' -> 62 | '_' -> 63
-    | _ -> invalid_arg "Base64.invert"
+    | _ -> raise Invalid_character
 
   let decode str =
     let len = String.length str in
@@ -381,39 +383,77 @@ module Property =
 struct
   type 'a typ =
     {
-      to_string: 'a -> string;
-      of_string: string -> 'a;
+      to_base64: 'a -> string;
+      of_base64: string -> 'a;
     }
 
   let unit =
     {
-      to_string = (fun () -> "");
-      of_string = (function _ -> ());
+      to_base64 = (fun () -> "");
+      of_base64 = (function _ -> ());
     }
+
+  exception Invalid_representation
+
+  let base64_of_bool = function
+    | true -> "1"
+    | false -> "0"
+
+  let bool_of_base64 = function
+    | "1" -> true
+    | "0" -> false
+    | _ -> raise Invalid_representation
 
   let bool =
     {
-      to_string = string_of_bool;
-      of_string = bool_of_string;
+      to_base64 = base64_of_bool;
+      of_base64 = bool_of_base64;
     }
+
+  let base64_of_int i =
+    (* TODO: actually use a 64 base (how to handle negative integers though?) *)
+    Base64.encode (string_of_int i)
+
+  let int_of_base64 str =
+    try
+      Pervasives.int_of_string (Base64.decode str)
+    with Failure _ | Base64.Invalid_character ->
+      raise Invalid_representation
 
   let int =
     {
-      to_string = string_of_int;
-      of_string = int_of_string;
+      to_base64 = base64_of_int;
+      of_base64 = int_of_base64;
     }
+
+  let base64_of_float i =
+    (* TODO: use base64 (fixed-length) representation of the bits somehow? *)
+    Base64.encode (string_of_float i)
+
+  let float_of_base64 str =
+    try
+      Pervasives.float_of_string (Base64.decode str)
+    with Failure _ | Base64.Invalid_character ->
+      raise Invalid_representation
 
   let float =
     {
-      to_string = string_of_float;
-      of_string = float_of_string;
+      to_base64 = base64_of_float;
+      of_base64 = float_of_base64;
     }
 
-  let id x = x
+  let base64_of_string = Base64.encode
+
+  let string_of_base64 str =
+    try
+      Base64.decode str
+    with Base64.Invalid_character ->
+      raise Invalid_representation
+
   let string =
     {
-      to_string = id;
-      of_string = id;
+      to_base64 = base64_of_string;
+      of_base64 = string_of_base64;
     }
 
   type cookie =
@@ -523,7 +563,7 @@ struct
       | Volatile ->
           ()
       | Cookie cookie ->
-          let value = property.typ.to_string property.value |> Base64.encode in
+          let value = property.typ.to_base64 property.value in
           Cookie.set
             ~name: cookie.name
             ~value
@@ -536,26 +576,6 @@ struct
           (* The property will be set after the event handler is done, so that
              all modified URL properties are saved at the same time. *)
           url_hash_must_be_updated := true
-
-  let load_cookies () =
-    let load (E property) =
-      match property.save with
-        | Volatile ->
-            ()
-        | Cookie cookie ->
-            let value = Cookie.get cookie.name |> Base64.decode in
-            property.value <- property.typ.of_string value
-        | URL ->
-            ()
-    in
-    List.iter load properties.cookie
-
-  let save_cookies () =
-    let save (E property) = want_to_save property in
-    List.iter save properties.cookie
-
-  let get property =
-    property.value
 
   (* Version of set which is called automatically and not by user code.
      The difference is that [set_and_update_dynamics] does not update the node,
@@ -581,10 +601,42 @@ struct
       | Group { attachments } ->
           Hashtbl.iter (fun _ na -> na.on_set value) attachments
 
-  let save_urls () =
-    let encode (E property) =
-      property.typ.to_string property.value |> Base64.encode
+  let assign_value_from_base64 property str =
+    match property.typ.of_base64 str with
+      | exception Invalid_representation ->
+          ()
+      | value ->
+          property.value <- value
+
+  let set_from_base64 property str =
+    match property.typ.of_base64 str with
+      | exception Invalid_representation ->
+          ()
+      | value ->
+          set property value
+
+  let load_cookies () =
+    let load (E property) =
+      match property.save with
+        | Volatile ->
+            ()
+        | Cookie cookie ->
+            let str = Cookie.get cookie.name in
+            assign_value_from_base64 property str
+        | URL ->
+            ()
     in
+    List.iter load properties.cookie
+
+  let save_cookies () =
+    let save (E property) = want_to_save property in
+    List.iter save properties.cookie
+
+  let get property =
+    property.value
+
+  let save_urls () =
+    let encode (E property) = property.typ.to_base64 property.value in
     properties.url
     |> List.map encode
     |> String.concat "."
@@ -597,7 +649,7 @@ struct
         | _, [] ->
             ()
         | E property :: other_properties, sub :: other_subs ->
-            set property (property.typ.of_string (Base64.decode sub));
+            set_from_base64 property sub;
             decode other_properties other_subs
     in
     decode properties.url (split_string '.' (URL_hash.get ()))
@@ -650,6 +702,10 @@ struct
   let set_on_input node on_input =
     opt_iter on_input @@ fun h ->
     node##oninput <- handler h
+
+  let set_on_change node on_change =
+    opt_iter on_change @@ fun h ->
+    node##onchange <- handler h
 
   let set_on_submit (node: Dom_html.formElement Js.t) on_submit =
     opt_iter on_submit @@ fun h ->
@@ -741,16 +797,26 @@ struct
                 set_class node c;
                 node
 
-  let input_text_or_password _type ?c (property: (string, single) Property.t) =
+  type update_mode =
+    | On_input
+    | On_change
+
+  let input_text_or_password _type ?c ?(mode = On_input)
+      (property: (string, single) Property.t) =
     let node =
       input _type ?c property @@ fun node new_value ->
       node##value <- Js.string new_value
     in
     node##value <- Js.string property.value;
-    let on_input () =
+    let on_update () =
       Property.set_and_update_dynamics property (Js.to_string node##value)
     in
-    set_on_input node (Some on_input);
+    let set_update_event =
+      match mode with
+        | On_input -> set_on_input
+        | On_change -> set_on_change
+    in
+    set_update_event node (Some on_update);
     Input node
 
   let input_text = input_text_or_password "text"

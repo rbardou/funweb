@@ -29,6 +29,9 @@ module Base64:
 sig
   (** Base64 encoding. *)
 
+  (** Raised by [decode] when encountering an invalid character. *)
+  exception Invalid_character
+
   (** Encode in URL-friendly Base64.
 
       Characters which are used are [A..Za..z0..9-_], and [=] for padding
@@ -209,11 +212,21 @@ sig
 
   (** {2 Input Nodes} *)
 
+  (** When shall the property of a text input be updated.
+      Default is [On_input], which may be a bit too soon for some
+      applications. Using [On_change] instead causes the property
+      to be set only when the input loses the focus. *)
+  type update_mode =
+    | On_input
+    | On_change
+
   (** Make an input node ([<input>]) with the [text] type. *)
-  val input_text: ?c: string -> (string, single) Property.t -> t
+  val input_text: ?c: string -> ?mode: update_mode ->
+    (string, single) Property.t -> t
 
   (** Make an input node ([<input>]) with the [password] type. *)
-  val input_password: ?c: string -> (string, single) Property.t -> t
+  val input_password: ?c: string -> ?mode: update_mode ->
+    (string, single) Property.t -> t
 
   (** Make an input node ([<input>]) with the [checkbox] type. *)
   val input_checkbox: ?c: string -> (bool, single) Property.t -> t
