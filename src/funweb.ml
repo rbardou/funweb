@@ -231,6 +231,62 @@ struct
     Dom_html.window##onhashchange <- Dom.handler handler
 end
 
+exception Stop
+
+type node =
+  | Text of Dom.text Js.t
+  | Img of Dom_html.imageElement Js.t
+  | A of Dom_html.anchorElement Js.t
+  | Button of Dom_html.buttonElement Js.t
+  | P of Dom_html.paragraphElement Js.t
+  | Div of Dom_html.divElement Js.t
+  | Span of Dom_html.element Js.t
+  | Form of Dom_html.formElement Js.t
+  | Input of Dom_html.inputElement Js.t
+
+let as_node = function
+  | Text x -> (x :> Dom.node Js.t)
+  | Img x -> (x :> Dom.node Js.t)
+  | A x -> (x :> Dom.node Js.t)
+  | Button x -> (x :> Dom.node Js.t)
+  | P x -> (x :> Dom.node Js.t)
+  | Div x -> (x :> Dom.node Js.t)
+  | Span x -> (x :> Dom.node Js.t)
+  | Form x -> (x :> Dom.node Js.t)
+  | Input x -> (x :> Dom.node Js.t)
+
+(* Each dynamic start with [up_to_date] set to [true].
+   Properties on which it depends have an observer which sets
+   it to [false]. If it was [true], the dynamic is added
+   to the [dynamics_to_be_rebuilt] list.
+   The list is emptied before dynamics are rebuilt. *)
+type dynamic =
+  {
+    mutable up_to_date: bool;
+    mutable node: node;
+    rebuild: unit -> node;
+  }
+
+let dynamics_to_be_rebuilt = ref []
+
+let rebuild_dynamics () =
+  let old_focus: Dom_html.inputElement Js.t Js.opt =
+    Js.Unsafe.get Dom_html.document "activeElement"
+  in
+  let dynamics = !dynamics_to_be_rebuilt in
+  dynamics_to_be_rebuilt := [];
+  let rebuild dynamic =
+    let old_node = as_node dynamic.node in
+    let new_node = dynamic.rebuild () in
+    dynamic.up_to_date <- true;
+    dynamic.node <- new_node;
+    Js.Opt.iter (old_node##parentNode) @@ fun parent ->
+    let _: Dom.node Js.t = parent##replaceChild(as_node new_node, old_node) in
+    ()
+  in
+  List.iter rebuild dynamics;
+  Js.Opt.iter old_focus (fun old_focus -> old_focus##focus())
+
 module Base64 =
 struct
   let pad = '='
@@ -344,63 +400,66 @@ struct
             assert false
     in
     Char.chr code
+
+  let of_int i =
+    (* We use a variable-length implementation which works for any integer
+       size. First bit is 1 if negative. This means that there are two ways to
+       represent zero: "A" and "g". This also means that, while prefixing
+       a positive integer with "A" does not change its value, prefixing
+       a negative integer with "A" will give an unexpected result.
+       It also means that some numbers are prefixed by "A", like 32 ("Ag").
+       Removing this "A" would turn the number into a negative integer. *)
+    (* Maybe we could use two's complement instead? *)
+    let positive = i >= 0 in
+    let rec make acc i =
+      if i < 32 then
+        if positive then
+          i :: acc
+        else
+          (i lor 32) :: acc
+      else
+        make ((i land 63) :: acc) (i lsr 6)
+    in
+    let digits = make [] (abs i) |> Array.of_list in
+    String.init (Array.length digits) @@ fun i ->
+    table.(digits.(i))
+
+  (* May raise [Invalid_character]. *)
+  let to_int str =
+    let len = String.length str in
+    let rec make acc pos =
+      if pos >= len then
+        acc
+      else
+        let digit = invert str.[pos] in
+        let acc = (acc lsl 6) lor digit in
+        make acc (pos + 1)
+    in
+    if len > 0 then
+      let digit = invert str.[0] in
+      if digit < 32 then
+        make digit 1
+      else
+        - make (digit land 31) 1
+    else
+      0
+
+  (* for i = 0 to max_int do *)
+  (*   if i mod 10000 = 0 then *)
+  (*     Printf.printf "%d -> %s (neg: %s) -> %d (neg: %d)\n%!" *)
+  (*       i (of_int i) (of_int (-i)) *)
+  (*       (to_int (of_int i)) (to_int (of_int (-i))) *)
+  (*   else ( *)
+  (*     if i <> (to_int (of_int i)) then *)
+  (*       Printf.printf "ERROR: %d -> %s -> %d\n%!" *)
+  (*         i (of_int i) (to_int (of_int i)); *)
+  (*     let i = -i in *)
+  (*     if i <> (to_int (of_int i)) then *)
+  (*       Printf.printf "ERROR: %d -> %s -> %d\n%!" *)
+  (*         i (of_int i) (to_int (of_int i)); *)
+  (*   ) *)
+  (* done *)
 end
-
-exception Stop
-
-type node =
-  | Text of Dom.text Js.t
-  | Img of Dom_html.imageElement Js.t
-  | A of Dom_html.anchorElement Js.t
-  | Button of Dom_html.buttonElement Js.t
-  | P of Dom_html.paragraphElement Js.t
-  | Div of Dom_html.divElement Js.t
-  | Span of Dom_html.element Js.t
-  | Form of Dom_html.formElement Js.t
-  | Input of Dom_html.inputElement Js.t
-
-let as_node = function
-  | Text x -> (x :> Dom.node Js.t)
-  | Img x -> (x :> Dom.node Js.t)
-  | A x -> (x :> Dom.node Js.t)
-  | Button x -> (x :> Dom.node Js.t)
-  | P x -> (x :> Dom.node Js.t)
-  | Div x -> (x :> Dom.node Js.t)
-  | Span x -> (x :> Dom.node Js.t)
-  | Form x -> (x :> Dom.node Js.t)
-  | Input x -> (x :> Dom.node Js.t)
-
-(* Each dynamic start with [up_to_date] set to [true].
-   Properties on which it depends have an observer which sets
-   it to [false]. If it was [true], the dynamic is added
-   to the [dynamics_to_be_rebuilt] list.
-   The list is emptied before dynamics are rebuilt. *)
-type dynamic =
-  {
-    mutable up_to_date: bool;
-    mutable node: node;
-    rebuild: unit -> node;
-  }
-
-let dynamics_to_be_rebuilt = ref []
-
-let rebuild_dynamics () =
-  let old_focus: Dom_html.inputElement Js.t Js.opt =
-    Js.Unsafe.get Dom_html.document "activeElement"
-  in
-  let dynamics = !dynamics_to_be_rebuilt in
-  dynamics_to_be_rebuilt := [];
-  let rebuild dynamic =
-    let old_node = as_node dynamic.node in
-    let new_node = dynamic.rebuild () in
-    dynamic.up_to_date <- true;
-    dynamic.node <- new_node;
-    Js.Opt.iter (old_node##parentNode) @@ fun parent ->
-    let _: Dom.node Js.t = parent##replaceChild(as_node new_node, old_node) in
-    ()
-  in
-  List.iter rebuild dynamics;
-  Js.Opt.iter old_focus (fun old_focus -> old_focus##focus())
 
 module Property =
 struct
@@ -433,19 +492,15 @@ struct
       of_base64 = bool_of_base64;
     }
 
-  let base64_of_int i =
-    (* TODO: actually use a 64 base (how to handle negative integers though?) *)
-    Base64.encode (string_of_int i)
-
   let int_of_base64 str =
     try
-      Pervasives.int_of_string (Base64.decode str)
-    with Failure _ | Base64.Invalid_character ->
+      Base64.to_int str
+    with Base64.Invalid_character ->
       raise Invalid_representation
 
   let int =
     {
-      to_base64 = base64_of_int;
+      to_base64 = Base64.of_int;
       of_base64 = int_of_base64;
     }
 
