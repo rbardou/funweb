@@ -469,13 +469,19 @@ struct
       of_base64: string -> 'a;
     }
 
+  exception Invalid_representation
+
+  let custom to_base64 of_base64 =
+    {
+      to_base64;
+      of_base64;
+    }
+
   let unit =
     {
       to_base64 = (fun () -> "");
       of_base64 = (function _ -> ());
     }
-
-  exception Invalid_representation
 
   let base64_of_bool = function
     | true -> "1"

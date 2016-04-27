@@ -94,6 +94,19 @@ sig
   (** Type descriptions for properties. *)
   type 'a typ
 
+  (** Raise this from custom decoders when given an invalid encoded value. *)
+  exception Invalid_representation
+
+  (** Make a custom type description.
+
+      Usage: [custom to_base64 of_base64]
+
+      [to_base64] shall encode values to strings composed only of
+      URL and cookie-compatible characters. [of_base64] shall
+      decode values back. If its argument cannot be decoded,
+      it may return a default value or raise [Invalid_representation]. *)
+  val custom: ('a -> string) -> (string -> 'a) -> 'a typ
+
   val unit: unit typ
   val bool: bool typ
   val int: int typ

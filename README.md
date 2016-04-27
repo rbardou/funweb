@@ -3,6 +3,8 @@
 Funweb is a library which provides simple web development tools for
 OCaml. It is based on `js_of_ocaml`.
 
+See the blog post: http://romain.bardou.fr/blog/Funweb.html
+
 ## Compile
 
 Just run:
