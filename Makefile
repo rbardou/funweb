@@ -16,6 +16,15 @@ default:
 doc:
 	$(OCAMLBUILD) funweb.docdir/index.html
 
+BASE = _build/src/
+FILES = $(BASE)funweb.cma $(BASE)funweb.cmi
+
+install:
+	ocamlfind install funweb META $(FILES)
+
+uninstall:
+	ocamlfind remove funweb
+
 clean:
 	rm -rf _build
 
