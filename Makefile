@@ -13,6 +13,9 @@ default:
 	js_of_ocaml _build/examples/login.byte -o _build/examples/login.js
 	js_of_ocaml _build/examples/save.byte -o _build/examples/save.js
 
+lib:
+	$(OCAMLBUILD) src/funweb.cma
+
 doc:
 	$(OCAMLBUILD) funweb.docdir/index.html
 
