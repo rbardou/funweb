@@ -260,6 +260,16 @@ sig
   val input_text: ?c: string -> ?mode: update_mode ->
     (string, single) Property.t -> t
 
+  (** Same as [input_text] but only set the property
+      if the text can be converted to an int. *)
+  val input_int: ?c: string -> ?mode: update_mode ->
+    (int, single) Property.t -> t
+
+  (** Same as [input_text] but only set the property
+      if the text can be converted to a float. *)
+  val input_float: ?c: string -> ?mode: update_mode ->
+    (float, single) Property.t -> t
+
   (** Make an input node ([<input>]) with the [password] type. *)
   val input_password: ?c: string -> ?mode: update_mode ->
     (string, single) Property.t -> t

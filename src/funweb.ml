@@ -885,15 +885,18 @@ struct
     | On_input
     | On_change
 
-  let input_text_or_password _type ?c ?(mode = On_input)
-      (property: (string, single) Property.t) =
+  let input_text_gen (type a) _type
+      (a_of_string: string -> a option)
+      (string_of_a: a -> string)
+      ?c ?(mode = On_input) (property: (a, single) Property.t) =
     let node =
       input _type ?c property @@ fun node new_value ->
-      node##value <- Js.string new_value
+      node##value <- Js.string (string_of_a new_value)
     in
-    node##value <- Js.string property.value;
+    node##value <- Js.string (string_of_a property.value);
     let on_update () =
-      Property.set_and_update_dynamics property (Js.to_string node##value)
+      opt_iter (a_of_string (Js.to_string node##value)) @@ fun value ->
+      Property.set_and_update_dynamics property value
     in
     let set_update_event =
       match mode with
@@ -903,8 +906,23 @@ struct
     set_update_event node (Some on_update);
     Input node
 
-  let input_text = input_text_or_password "text"
-  let input_password = input_text_or_password "password"
+  let id x = x
+  let some x = Some x
+  let int_option_of_string x =
+    try
+      Some (int_of_string x)
+    with Failure _ ->
+      None
+  let float_option_of_string x =
+    try
+      Some (float_of_string x)
+    with Failure _ ->
+      None
+
+  let input_text = input_text_gen "text" some id
+  let input_int = input_text_gen "text" int_option_of_string string_of_int
+  let input_float = input_text_gen "text" float_option_of_string string_of_float
+  let input_password = input_text_gen "password" some id
 
   let input_checkbox ?c (property: (bool, single) Property.t) =
     let node =
