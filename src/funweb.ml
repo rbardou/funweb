@@ -214,20 +214,22 @@ struct
     else
       hash
 
-  (* [setting] is used to prevent [set] from triggering [on_change]. *)
-  let setting = ref false
+  (* [cache] is used to prevent [set] from triggering [on_change]. *)
+  let cache = ref ""
 
   let set hash =
-    setting := true;
-    try
-      Dom_html.window##location##hash <- Js.string hash;
-      setting := false
-    with exn ->
-      setting := false;
-      raise exn
+    cache := hash;
+    Dom_html.window##location##hash <- Js.string hash
 
   let on_change handler =
-    let handler _ = if not !setting then handler (); Js._true in
+    let handler _ =
+      let value = get () in
+      if value <> !cache then (
+        cache := value;
+        handler ();
+      );
+      Js._true
+    in
     Dom_html.window##onhashchange <- Dom.handler handler
 end
 
@@ -1005,7 +1007,11 @@ let run ?focus create_html =
     Property.load_cookies ();
     Property.save_cookies (); (* Refresh cookie expiration dates. *)
     Property.load_urls ();
-    URL_hash.on_change (fun () -> Property.load_urls (); rebuild_dynamics ());
+    let on_hash_change () =
+      Property.load_urls ();
+      rebuild_dynamics ()
+    in
+    URL_hash.on_change on_hash_change;
     let html = create_html () |> as_node in
     let body =
       let elements =
