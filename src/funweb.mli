@@ -216,6 +216,22 @@ sig
   end
 end
 
+module Style:
+sig
+  (** Style descriptions. *)
+
+  (** Style properties (with the CSS meaning of "property"). *)
+  type property =
+    | Position
+    | Left
+    | Right
+    | Top
+    | Bottom
+
+  (** Style descriptions, i.e. valued properties. *)
+  type t = (property * string) list
+end
+
 (** Raise this from event handlers to cancel the default behavior.
 
     For instance, it can be raised from the [on_click] event of a button
@@ -245,10 +261,12 @@ sig
   val p: ?c: string -> t list -> t
 
   (** Make a block group node ([<div>]). *)
-  val div: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
+  val div: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
+    t list -> t
 
   (** Make an inline group node ([<span>]). *)
-  val span: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
+  val span: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
+    t list -> t
 
   (** Make a form group node ([<form>]). *)
   val form: ?c: string -> ?on_submit: (unit -> unit) -> t list -> t

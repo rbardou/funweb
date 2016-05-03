@@ -765,6 +765,32 @@ struct
   end
 end
 
+module Style =
+struct
+  type property =
+    | Position
+    | Left
+    | Right
+    | Top
+    | Bottom
+
+  type t = (property * string) list
+
+  let set_property node (property, value) =
+    let value = Js.string value in
+    match property with
+      | Position -> node##style##position <- value
+      | Left -> node##style##left <- value
+      | Right -> node##style##right <- value
+      | Top -> node##style##top <- value
+      | Bottom -> node##style##bottom <- value
+
+  let set node style =
+    match style with
+      | None -> ()
+      | Some style -> List.iter (set_property node) style
+end
+
 let run_after_event_triggers () =
   rebuild_dynamics ();
   Property.save_urls ()
@@ -851,18 +877,20 @@ struct
     set_class node c;
     P node
 
-  let div ?c ?on_click children =
+  let div ?c ?style ?on_click children =
     let node = Dom_html.(createDiv document) in
     append_children node children;
     set_class node c;
     set_on_click node on_click;
+    Style.set node style;
     Div node
 
-  let span ?c ?on_click children =
+  let span ?c ?style ?on_click children =
     let node = Dom_html.(createSpan document) in
     append_children node children;
     set_class node c;
     set_on_click node on_click;
+    Style.set node style;
     Span node
 
   let form ?c ?on_submit children =
