@@ -765,6 +765,10 @@ struct
   end
 end
 
+let run_after_event_triggers () =
+  rebuild_dynamics ();
+  Property.save_urls ()
+
 module Html =
 struct
   type t = node
@@ -783,8 +787,7 @@ struct
         | _ ->
             Js._true
     in
-    rebuild_dynamics ();
-    Property.save_urls ();
+    run_after_event_triggers ();
     continue
 
   let set_on_click node on_click =
@@ -1041,3 +1044,16 @@ let run ?focus create_html =
     Js._true
   in
   Dom_html.window##onload <- Dom.handler on_load
+
+let delay duration on_timeout =
+  let on_timeout () =
+    on_timeout ();
+    run_after_event_triggers ()
+  in
+  let _: Dom_html.timeout_id =
+    Dom_html.window##setTimeout(Js.wrap_callback on_timeout, duration)
+  in
+  ()
+
+let now () =
+  (jsnew Js.date_now ())##getTime()

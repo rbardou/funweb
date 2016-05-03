@@ -314,3 +314,9 @@ end
     - all properties must have been defined before [run] is called;
     - HTML nodes must be created by [make], not before [run]. *)
 val run: ?focus: ('a, single) Property.t -> (unit -> Html.t) -> unit
+
+(** Set a timeout in milliseconds. *)
+val delay: float -> (unit -> unit) -> unit
+
+(** Get the current time in milliseconds. *)
+val now: unit -> float
