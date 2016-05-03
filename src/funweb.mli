@@ -79,11 +79,35 @@ sig
   val get: string -> string
 end
 
+module type STORAGE =
+sig
+  (** Storage management. *)
+
+  (** Add or replace a value. *)
+  val set: name: string -> value: string -> unit
+
+  (** Get a value. *)
+  val get: string -> string option
+
+  (** Remove a value if it exists. *)
+  val remove: string -> unit
+
+  (** Remove all values. *)
+  val clear: unit -> unit
+end
+
+module Local_storage: STORAGE
+module Session_storage: STORAGE
+
 (** Phantom type for properties which are attached to a single node. *)
 type single
 
 (** Phantom type for properties which are attached to multiple nodes. *)
 type group
+
+(** Raise this from custom property decoders when given an invalid
+    encoded value. *)
+exception Invalid_representation
 
 module Property:
 sig
@@ -93,9 +117,6 @@ sig
 
   (** Type descriptions for properties. *)
   type 'a typ
-
-  (** Raise this from custom decoders when given an invalid encoded value. *)
-  exception Invalid_representation
 
   (** Make a custom type description.
 
@@ -132,6 +153,25 @@ sig
       secure: bool;
     }
 
+  (** Storage location: local or session. *)
+  type storage_location = Local | Session
+
+  (** Encoding to use in storages.
+
+      - [Base64] uses the same encoding as cookies and URLs.
+      - [Unsafe_JSON] uses [Json.output] and [Json.unsafe_input],
+        with no base64 encoding.
+  *)
+  type storage_encoding = Base64 | Unsafe_JSON
+
+  (** Information for the [Storage] save method. *)
+  type storage =
+    {
+      name: string;
+      location: storage_location;
+      encoding: storage_encoding;
+    }
+
   (** Save methods.
 
       - [Volatile] properties are not saved.
@@ -139,15 +179,28 @@ sig
         Note that cookies are sent to the HTTP server.
       - [URL] properties are saved in the hash part of the URL, i.e. after
         the [#]. The user can thus bookmark them and restore previous values
-        using the Back button. *)
+        using the Back button.
+      - [Storage] properties are saved in the local or session storage.
+  *)
   type save =
     | Volatile
     | Cookie of cookie
     | URL
+    | Storage of storage
 
   (** Convenient way to build a [Cookie { ... }] value. *)
   val cookie: ?expires: float -> ?domain: string -> ?path: string ->
     ?secure: bool -> string -> save
+
+  (** Convenient way to build a [Storage { ... }] value.
+
+      - If [session] is [true], use the [Session] storage.
+        Else, use the [Local] storage.
+        Default is [false].
+      - If [unsafe_json] is [true], use the [Unsafe_JSON] encoding.
+        Else, use the [Base64] encoding.
+        Default is [false]. *)
+  val storage: ?session: bool -> ?unsafe_json: bool -> string -> save
 
   (** {2 Properties} *)
 

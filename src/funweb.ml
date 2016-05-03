@@ -203,6 +203,48 @@ struct
       | value -> value
 end
 
+module type STORAGE =
+sig
+  val set: name: string -> value: string -> unit
+  val get: string -> string option
+  val remove: string -> unit
+  val clear: unit -> unit
+end
+
+module type STORAGE_OBJECT =
+sig
+  val storage: unit -> Dom_html.storage Js.t Js.optdef
+end
+
+module Make_storage(X: STORAGE_OBJECT): STORAGE =
+struct
+  let set ~name ~value =
+    Js.Optdef.iter (X.storage ()) @@ fun storage ->
+    storage##setItem(Js.string name, Js.string value)
+
+  let get name =
+    Js.Optdef.case (X.storage ())
+      (fun () -> None)
+      (fun storage ->
+         Js.Opt.case storage##getItem(Js.string name)
+           (fun () -> None)
+           (fun value -> Some (Js.to_string value)))
+
+  let remove name =
+    Js.Optdef.iter (X.storage ()) @@ fun storage ->
+    storage##removeItem(Js.string name)
+
+  let clear () =
+    Js.Optdef.iter (X.storage ()) @@ fun storage ->
+    storage##clear()
+end
+
+module Local_storage =
+  Make_storage(struct let storage () = Dom_html.window##localStorage end)
+
+module Session_storage =
+  Make_storage(struct let storage () = Dom_html.window##sessionStorage end)
+
 module URL_hash =
 struct
   let get () =
@@ -463,6 +505,18 @@ struct
   (* done *)
 end
 
+exception Invalid_representation
+
+module Json =
+struct
+  let output x = Json.output x
+  let unsafe_input x =
+    try
+      Json.unsafe_input x
+    with _ ->
+      raise Invalid_representation
+end
+
 module Property =
 struct
   type 'a typ =
@@ -470,8 +524,6 @@ struct
       to_base64: 'a -> string;
       of_base64: string -> 'a;
     }
-
-  exception Invalid_representation
 
   let custom to_base64 of_base64 =
     {
@@ -557,10 +609,22 @@ struct
       secure: bool;
     }
 
+  type storage_location = Local | Session
+
+  type storage_encoding = Base64 | Unsafe_JSON
+
+  type storage =
+    {
+      name: string;
+      location: storage_location;
+      encoding: storage_encoding;
+    }
+
   type save =
     | Volatile
     | Cookie of cookie
     | URL
+    | Storage of storage
 
   let cookie ?expires ?domain ?path ?(secure = false) name =
     Cookie {
@@ -569,6 +633,13 @@ struct
       domain;
       path;
       secure;
+    }
+
+  let storage ?(session = false) ?(unsafe_json = false) name =
+    Storage {
+      name;
+      location = if session then Session else Local;
+      encoding = if unsafe_json then Unsafe_JSON else Base64;
     }
 
   type 'a node_attachment =
@@ -607,14 +678,14 @@ struct
   type properties =
     {
       mutable all: e list;
-      mutable cookie: e list;
+      mutable cookie_or_storage: e list;
       mutable url: e list;
     }
 
   let properties =
     {
       all = [];
-      cookie = [];
+      cookie_or_storage = [];
       url = [];
     }
 
@@ -634,8 +705,8 @@ struct
     begin match save with
       | Volatile ->
           ()
-      | Cookie _ ->
-          properties.cookie <- e :: properties.cookie
+      | Cookie _ | Storage _ ->
+          properties.cookie_or_storage <- e :: properties.cookie_or_storage
       | URL ->
           properties.url <- e :: properties.url
     end;
@@ -650,7 +721,7 @@ struct
 
   let url_hash_must_be_updated = ref false
 
-  let want_to_save property =
+  let want_to_save ~refresh_only property =
     match property.save with
       | Volatile ->
           ()
@@ -664,17 +735,31 @@ struct
             ?path: cookie.path
             ~secure: cookie.secure
             ()
+      | Storage storage ->
+          if not refresh_only then
+            let set =
+              match storage.location with
+                | Local -> Local_storage.set
+                | Session -> Session_storage.set
+            in
+            let value =
+              match storage.encoding with
+                | Base64 -> property.typ.to_base64 property.value
+                | Unsafe_JSON -> Js.to_string (Json.output property.value)
+            in
+            set ~name: storage.name ~value
       | URL ->
-          (* The property will be set after the event handler is done, so that
-             all modified URL properties are saved at the same time. *)
-          url_hash_must_be_updated := true
+          if not refresh_only then
+            (* The property will be set after the event handler is done, so that
+               all modified URL properties are saved at the same time. *)
+            url_hash_must_be_updated := true
 
   (* Version of set which is called automatically and not by user code.
      The difference is that [set_and_update_dynamics] does not update the node,
      as this could trigger an event which would set the property again. *)
   let set_and_update_dynamics property value =
     property.value <- value;
-    want_to_save property;
+    want_to_save ~refresh_only: false property;
     let update_dynamic dynamic =
       if dynamic.up_to_date then (
         dynamic.up_to_date <- false;
@@ -707,7 +792,7 @@ struct
       | value ->
           set property value
 
-  let load_cookies () =
+  let load_cookies_and_storage () =
     let load (E property) =
       match property.save with
         | Volatile ->
@@ -715,14 +800,33 @@ struct
         | Cookie cookie ->
             let str = Cookie.get cookie.name in
             assign_value_from_base64 property str
+        | Storage storage ->
+            let name = storage.name in
+            let value =
+              match storage.location with
+                | Local -> Local_storage.get name
+                | Session -> Session_storage.get name
+            in
+            opt_iter value @@ fun value ->
+            let value =
+              match storage.encoding with
+                | Base64 -> property.typ.of_base64 value
+                | Unsafe_JSON ->
+                    match Json.unsafe_input (Js.string value) with
+                      | exception Invalid_representation ->
+                          property.value
+                      | value ->
+                          value
+            in
+            property.value <- value
         | URL ->
             ()
     in
-    List.iter load properties.cookie
+    List.iter load properties.cookie_or_storage
 
-  let save_cookies () =
-    let save (E property) = want_to_save property in
-    List.iter save properties.cookie
+  let save_cookies_and_storage ~refresh_only () =
+    let save (E property) = want_to_save ~refresh_only property in
+    List.iter save properties.cookie_or_storage
 
   let get property =
     property.value
@@ -1077,8 +1181,8 @@ end
 
 let run ?focus create_html =
   let on_load _ =
-    Property.load_cookies ();
-    Property.save_cookies (); (* Refresh cookie expiration dates. *)
+    Property.load_cookies_and_storage ();
+    Property.save_cookies_and_storage ~refresh_only: true ();
     Property.load_urls ();
     let on_hash_change () =
       Property.load_urls ();
