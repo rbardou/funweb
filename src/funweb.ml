@@ -542,6 +542,12 @@ struct
       of_base64 = string_of_base64;
     }
 
+  let unsafe_json =
+    {
+      to_base64 = (fun x -> base64_of_string (Js.to_string (Json.output x)));
+      of_base64 = (fun x -> Json.unsafe_input (Js.string (string_of_base64 x)));
+    }
+
   type cookie =
     {
       name: string;

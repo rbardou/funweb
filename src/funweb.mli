@@ -107,6 +107,13 @@ sig
       it may return a default value or raise [Invalid_representation]. *)
   val custom: ('a -> string) -> (string -> 'a) -> 'a typ
 
+  (** Generic type description, JSON encoding.
+
+      Values are encoded using [Json.output] and decoded using
+      [Json.unsafe_input]. The JSON representation is itself base64-encoded.
+      This is convenient but input values are not type-checked. *)
+  val unsafe_json: 'a typ
+
   val unit: unit typ
   val bool: bool typ
   val int: int typ
