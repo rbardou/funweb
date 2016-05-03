@@ -842,16 +842,18 @@ struct
     set_class node c;
     P node
 
-  let div ?c children =
+  let div ?c ?on_click children =
     let node = Dom_html.(createDiv document) in
     append_children node children;
     set_class node c;
+    set_on_click node on_click;
     Div node
 
-  let span ?c children =
+  let span ?c ?on_click children =
     let node = Dom_html.(createSpan document) in
     append_children node children;
     set_class node c;
+    set_on_click node on_click;
     Span node
 
   let form ?c ?on_submit children =

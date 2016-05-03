@@ -238,10 +238,10 @@ sig
   val p: ?c: string -> t list -> t
 
   (** Make a block group node ([<div>]). *)
-  val div: ?c: string -> t list -> t
+  val div: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
 
   (** Make an inline group node ([<span>]). *)
-  val span: ?c: string -> t list -> t
+  val span: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
 
   (** Make a form group node ([<form>]). *)
   val form: ?c: string -> ?on_submit: (unit -> unit) -> t list -> t
