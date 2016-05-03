@@ -795,6 +795,17 @@ let run_after_event_triggers () =
   rebuild_dynamics ();
   Property.save_urls ()
 
+module Mouse_event =
+struct
+  type t = Dom_html.mouseEvent Js.t
+  let client_x (ev: t) = ev##clientX
+  let client_y (ev: t) = ev##clientY
+  let page_x (ev: t) = Js.Optdef.to_option ev##pageX
+  let page_y (ev: t) = Js.Optdef.to_option ev##pageY
+  let screen_x (ev: t) = ev##screenX
+  let screen_y (ev: t) = ev##screenY
+end
+
 module Html =
 struct
   type t = node
@@ -804,10 +815,10 @@ struct
   let set_class node c =
     opt_iter c (fun x -> node##className <- Js.string x)
 
-  let handler f =
-    Dom.handler @@ fun _ ->
+  let handler_arg f =
+    Dom.handler @@ fun x ->
     let continue =
-      match f () with
+      match f x with
         | exception Stop ->
             Js._false
         | _ ->
@@ -815,6 +826,9 @@ struct
     in
     run_after_event_triggers ();
     continue
+
+  let handler f =
+    handler_arg (fun _ -> f ())
 
   let set_on_click node on_click =
     opt_iter on_click @@ fun h ->
@@ -827,6 +841,18 @@ struct
   let set_on_change node on_change =
     opt_iter on_change @@ fun h ->
     node##onchange <- handler h
+
+  let set_on_mouse_over node on_mouse_over =
+    opt_iter on_mouse_over @@ fun h ->
+    node##onmouseover <- handler_arg h
+
+  let set_on_mouse_move node on_mouse_move =
+    opt_iter on_mouse_move @@ fun h ->
+    node##onmousemove <- handler_arg h
+
+  let set_on_mouse_out node on_mouse_out =
+    opt_iter on_mouse_out @@ fun h ->
+    node##onmouseout <- handler h
 
   let set_on_submit (node: Dom_html.formElement Js.t) on_submit =
     opt_iter on_submit @@ fun h ->
@@ -877,19 +903,27 @@ struct
     set_class node c;
     P node
 
-  let div ?c ?style ?on_click children =
+  let div ?c ?style ?on_click ?on_mouse_over ?on_mouse_move ?on_mouse_out
+      children =
     let node = Dom_html.(createDiv document) in
     append_children node children;
     set_class node c;
     set_on_click node on_click;
+    set_on_mouse_over node on_mouse_over;
+    set_on_mouse_move node on_mouse_move;
+    set_on_mouse_out node on_mouse_out;
     Style.set node style;
     Div node
 
-  let span ?c ?style ?on_click children =
+  let span ?c ?style ?on_click ?on_mouse_over ?on_mouse_move ?on_mouse_out
+      children =
     let node = Dom_html.(createSpan document) in
     append_children node children;
     set_class node c;
     set_on_click node on_click;
+    set_on_mouse_over node on_mouse_over;
+    set_on_mouse_move node on_mouse_move;
+    set_on_mouse_out node on_mouse_out;
     Style.set node style;
     Span node
 

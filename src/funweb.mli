@@ -238,6 +238,32 @@ end
     to prevent the [on_submit] event of the form to also be executed. *)
 exception Stop
 
+module Mouse_event:
+sig
+  (** Mouse event information. *)
+
+  (** Mouse event information. *)
+  type t
+
+  (** X position relative to client area (ignores scrollbars). *)
+  val client_x: t -> int
+
+  (** Y position relative to client area (ignores scrollbars). *)
+  val client_y: t -> int
+
+  (** X position relative to the whole document. *)
+  val page_x: t -> int option
+
+  (** Y position relative to the whole document. *)
+  val page_y: t -> int option
+
+  (** X position on the screen. *)
+  val screen_x: t -> int
+
+  (** Y position on the screen. *)
+  val screen_y: t -> int
+end
+
 module Html:
 sig
   (** HTML tree constructors. *)
@@ -262,10 +288,16 @@ sig
 
   (** Make a block group node ([<div>]). *)
   val div: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
+    ?on_mouse_over: (Mouse_event.t -> unit) ->
+    ?on_mouse_move: (Mouse_event.t -> unit) ->
+    ?on_mouse_out: (unit -> unit) ->
     t list -> t
 
   (** Make an inline group node ([<span>]). *)
   val span: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
+    ?on_mouse_over: (Mouse_event.t -> unit) ->
+    ?on_mouse_move: (Mouse_event.t -> unit) ->
+    ?on_mouse_out: (unit -> unit) ->
     t list -> t
 
   (** Make a form group node ([<form>]). *)
