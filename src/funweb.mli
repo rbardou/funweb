@@ -388,7 +388,8 @@ sig
   val input_checkbox: ?c: string -> (bool, single) Property.t -> t
 
   (** Make an input node ([<input>]) with the [radio] type. *)
-  val input_radio: ?c: string -> ('a, group) Property.t -> 'a -> t
+  val input_radio: ?c: string -> ?on_click: (unit -> unit) ->
+    ('a, group) Property.t -> 'a -> t
 
   (** {2 Rebuildable Nodes} *)
 

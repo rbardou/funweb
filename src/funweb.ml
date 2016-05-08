@@ -1115,7 +1115,7 @@ struct
     set_on_click node (Some on_click);
     Input node
 
-  let input_radio ?c (property: ('a, group) Property.t) (value: 'a) =
+  let input_radio ?c ?on_click (property: ('a, group) Property.t) (value: 'a) =
     let { Property.group_name; attachments } =
       match property.kind with | Property.Group kind -> kind
     in
@@ -1153,6 +1153,7 @@ struct
     set_class node c;
     node##checked <- Js.bool (property.value = value);
     let on_click () =
+      (match on_click with None -> () | Some on_click -> on_click ());
       Property.set_and_update_dynamics property value
     in
     set_on_click node (Some on_click);
