@@ -833,10 +833,13 @@ struct
 
   let save_urls () =
     let encode (E property) = property.typ.to_base64 property.value in
-    properties.url
-    |> List.map encode
-    |> String.concat "."
-    |> URL_hash.set
+    let hash =
+      properties.url
+      |> List.map encode
+      |> String.concat "."
+    in
+    (* An empty hash causes scrolling to the top. *)
+    if hash = "" then URL_hash.set " " else URL_hash.set hash
 
   let load_urls () =
     let rec decode properties subs =
@@ -848,7 +851,10 @@ struct
             set_from_base64 property sub;
             decode other_properties other_subs
     in
-    decode properties.url (split_string '.' (URL_hash.get ()))
+    let hash = URL_hash.get () in
+    (* Remove the space added by [save_urls]. *)
+    let hash = if hash = " " then "" else hash in
+    decode properties.url (split_string '.' hash)
 
   let all () =
     properties.all
