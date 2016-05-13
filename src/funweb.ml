@@ -260,8 +260,10 @@ struct
   let cache = ref ""
 
   let set hash =
-    cache := hash;
-    Dom_html.window##location##hash <- Js.string hash
+    if !cache <> hash then (
+      cache := hash;
+      Dom_html.window##location##hash <- Js.string hash
+    )
 
   let on_change handler =
     let handler _ =
