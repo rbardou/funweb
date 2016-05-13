@@ -832,14 +832,15 @@ struct
     property.value
 
   let save_urls () =
-    let encode (E property) = property.typ.to_base64 property.value in
-    let hash =
-      properties.url
-      |> List.map encode
-      |> String.concat "."
-    in
-    (* An empty hash causes scrolling to the top. *)
-    if hash = "" then URL_hash.set " " else URL_hash.set hash
+    if !url_hash_must_be_updated then
+      let encode (E property) = property.typ.to_base64 property.value in
+      let hash =
+        properties.url
+        |> List.map encode
+        |> String.concat "."
+      in
+      (* An empty hash causes scrolling to the top. *)
+      if hash = "" then URL_hash.set " " else URL_hash.set hash
 
   let load_urls () =
     let rec decode properties subs =
