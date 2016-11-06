@@ -363,6 +363,27 @@ sig
   (** Make a list item node ([<li>]). *)
   val li: ?c: string -> t list -> t
 
+  (** Make a table node ([<table>]). *)
+  val table: ?c: string -> t list -> t
+
+  (** Make a table head node ([<thead>]). *)
+  val thead: ?c: string -> t list -> t
+
+  (** Make a table body node ([<tbody>]). *)
+  val tbody: ?c: string -> t list -> t
+
+  (** Make a table foot node ([<tfoot>]). *)
+  val tfoot: ?c: string -> t list -> t
+
+  (** Make a table row node ([<tr>]). *)
+  val tr: ?c: string -> t list -> t
+
+  (** Make a table header node ([<th>]). *)
+  val th: ?c: string -> t list -> t
+
+  (** Make a table data node ([<td>]). *)
+  val td: ?c: string -> t list -> t
+
   (** Make a block group node ([<div>]). *)
   val div: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
     ?on_mouse_over: (Mouse_event.t -> unit) ->

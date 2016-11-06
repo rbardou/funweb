@@ -293,6 +293,13 @@ type node =
   | H6 of Dom_html.headingElement Js.t
   | Ul of Dom_html.uListElement Js.t
   | Li of Dom_html.liElement Js.t
+  | Table of Dom_html.tableElement Js.t
+  | Thead of Dom_html.tableSectionElement Js.t
+  | Tbody of Dom_html.tableSectionElement Js.t
+  | Tfoot of Dom_html.tableSectionElement Js.t
+  | Tr of Dom_html.tableRowElement Js.t
+  | Th of Dom_html.tableCellElement Js.t
+  | Td of Dom_html.tableCellElement Js.t
   | Div of Dom_html.divElement Js.t
   | Span of Dom_html.element Js.t
   | Form of Dom_html.formElement Js.t
@@ -312,6 +319,13 @@ let as_node = function
   | H6 x -> (x :> Dom.node Js.t)
   | Ul x -> (x :> Dom.node Js.t)
   | Li x -> (x :> Dom.node Js.t)
+  | Table x -> (x :> Dom.node Js.t)
+  | Thead x -> (x :> Dom.node Js.t)
+  | Tbody x -> (x :> Dom.node Js.t)
+  | Tfoot x -> (x :> Dom.node Js.t)
+  | Tr x -> (x :> Dom.node Js.t)
+  | Th x -> (x :> Dom.node Js.t)
+  | Td x -> (x :> Dom.node Js.t)
   | Div x -> (x :> Dom.node Js.t)
   | Span x -> (x :> Dom.node Js.t)
   | Form x -> (x :> Dom.node Js.t)
@@ -1079,6 +1093,48 @@ struct
     append_children node children;
     set_class node c;
     Li node
+
+  let table ?c children =
+    let node = Dom_html.(createTable document) in
+    append_children node children;
+    set_class node c;
+    Table node
+
+  let thead ?c children =
+    let node = Dom_html.(createThead document) in
+    append_children node children;
+    set_class node c;
+    Thead node
+
+  let tbody ?c children =
+    let node = Dom_html.(createTbody document) in
+    append_children node children;
+    set_class node c;
+    Tbody node
+
+  let tfoot ?c children =
+    let node = Dom_html.(createTfoot document) in
+    append_children node children;
+    set_class node c;
+    Tfoot node
+
+  let tr ?c children =
+    let node = Dom_html.(createTr document) in
+    append_children node children;
+    set_class node c;
+    Tr node
+
+  let th ?c children =
+    let node = Dom_html.(createTh document) in
+    append_children node children;
+    set_class node c;
+    Th node
+
+  let td ?c children =
+    let node = Dom_html.(createTd document) in
+    append_children node children;
+    set_class node c;
+    Td node
 
   let div ?c ?style ?on_click ?on_mouse_over ?on_mouse_move ?on_mouse_out
       children =
