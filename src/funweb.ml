@@ -291,6 +291,8 @@ type node =
   | H4 of Dom_html.headingElement Js.t
   | H5 of Dom_html.headingElement Js.t
   | H6 of Dom_html.headingElement Js.t
+  | Ul of Dom_html.uListElement Js.t
+  | Li of Dom_html.liElement Js.t
   | Div of Dom_html.divElement Js.t
   | Span of Dom_html.element Js.t
   | Form of Dom_html.formElement Js.t
@@ -308,6 +310,8 @@ let as_node = function
   | H4 x -> (x :> Dom.node Js.t)
   | H5 x -> (x :> Dom.node Js.t)
   | H6 x -> (x :> Dom.node Js.t)
+  | Ul x -> (x :> Dom.node Js.t)
+  | Li x -> (x :> Dom.node Js.t)
   | Div x -> (x :> Dom.node Js.t)
   | Span x -> (x :> Dom.node Js.t)
   | Form x -> (x :> Dom.node Js.t)
@@ -1063,6 +1067,18 @@ struct
     append_children node children;
     set_class node c;
     H6 node
+
+  let ul ?c children =
+    let node = Dom_html.(createUl document) in
+    append_children node children;
+    set_class node c;
+    Ul node
+
+  let li ?c children =
+    let node = Dom_html.(createLi document) in
+    append_children node children;
+    set_class node c;
+    Li node
 
   let div ?c ?style ?on_click ?on_mouse_over ?on_mouse_move ?on_mouse_out
       children =

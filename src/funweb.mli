@@ -357,6 +357,12 @@ sig
   (** Make a header level 6 node ([<h6>]). *)
   val h6: ?c: string -> t list -> t
 
+  (** Make an unordered list node ([<ul>]). *)
+  val ul: ?c: string -> t list -> t
+
+  (** Make a list item node ([<li>]). *)
+  val li: ?c: string -> t list -> t
+
   (** Make a block group node ([<div>]). *)
   val div: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
     ?on_mouse_over: (Mouse_event.t -> unit) ->
