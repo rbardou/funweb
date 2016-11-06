@@ -285,6 +285,12 @@ type node =
   | A of Dom_html.anchorElement Js.t
   | Button of Dom_html.buttonElement Js.t
   | P of Dom_html.paragraphElement Js.t
+  | H1 of Dom_html.headingElement Js.t
+  | H2 of Dom_html.headingElement Js.t
+  | H3 of Dom_html.headingElement Js.t
+  | H4 of Dom_html.headingElement Js.t
+  | H5 of Dom_html.headingElement Js.t
+  | H6 of Dom_html.headingElement Js.t
   | Div of Dom_html.divElement Js.t
   | Span of Dom_html.element Js.t
   | Form of Dom_html.formElement Js.t
@@ -296,6 +302,12 @@ let as_node = function
   | A x -> (x :> Dom.node Js.t)
   | Button x -> (x :> Dom.node Js.t)
   | P x -> (x :> Dom.node Js.t)
+  | H1 x -> (x :> Dom.node Js.t)
+  | H2 x -> (x :> Dom.node Js.t)
+  | H3 x -> (x :> Dom.node Js.t)
+  | H4 x -> (x :> Dom.node Js.t)
+  | H5 x -> (x :> Dom.node Js.t)
+  | H6 x -> (x :> Dom.node Js.t)
   | Div x -> (x :> Dom.node Js.t)
   | Span x -> (x :> Dom.node Js.t)
   | Form x -> (x :> Dom.node Js.t)
@@ -1015,6 +1027,42 @@ struct
     append_children node children;
     set_class node c;
     P node
+
+  let h1 ?c children =
+    let node = Dom_html.(createH1 document) in
+    append_children node children;
+    set_class node c;
+    H1 node
+
+  let h2 ?c children =
+    let node = Dom_html.(createH2 document) in
+    append_children node children;
+    set_class node c;
+    H2 node
+
+  let h3 ?c children =
+    let node = Dom_html.(createH3 document) in
+    append_children node children;
+    set_class node c;
+    H3 node
+
+  let h4 ?c children =
+    let node = Dom_html.(createH4 document) in
+    append_children node children;
+    set_class node c;
+    H4 node
+
+  let h5 ?c children =
+    let node = Dom_html.(createH5 document) in
+    append_children node children;
+    set_class node c;
+    H5 node
+
+  let h6 ?c children =
+    let node = Dom_html.(createH6 document) in
+    append_children node children;
+    set_class node c;
+    H6 node
 
   let div ?c ?style ?on_click ?on_mouse_over ?on_mouse_move ?on_mouse_out
       children =

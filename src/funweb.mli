@@ -339,6 +339,24 @@ sig
   (** Make a paragraph node ([<p>]). *)
   val p: ?c: string -> t list -> t
 
+  (** Make a header level 1 node ([<h1>]). *)
+  val h1: ?c: string -> t list -> t
+
+  (** Make a header level 2 node ([<h2>]). *)
+  val h2: ?c: string -> t list -> t
+
+  (** Make a header level 3 node ([<h3>]). *)
+  val h3: ?c: string -> t list -> t
+
+  (** Make a header level 4 node ([<h4>]). *)
+  val h4: ?c: string -> t list -> t
+
+  (** Make a header level 5 node ([<h5>]). *)
+  val h5: ?c: string -> t list -> t
+
+  (** Make a header level 6 node ([<h6>]). *)
+  val h6: ?c: string -> t list -> t
+
   (** Make a block group node ([<div>]). *)
   val div: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
     ?on_mouse_over: (Mouse_event.t -> unit) ->

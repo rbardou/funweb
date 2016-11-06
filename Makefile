@@ -28,6 +28,8 @@ install:
 uninstall:
 	ocamlfind remove funweb
 
+reinstall: uninstall install
+
 clean:
 	rm -rf _build
 
