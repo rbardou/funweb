@@ -1353,3 +1353,36 @@ let delay duration on_timeout =
 
 let now () =
   (jsnew Js.date_now ())##getTime()
+
+type http_response =
+  {
+    code: int;
+    content: string;
+  }
+
+let http_request ?(verb = "GET") ~url ?content_type ?content f =
+  let request = XmlHttpRequest.create () in
+  request##_open(Js.string verb, Js.string url, Js._true);
+  (
+    match content_type with
+      | None ->
+          ()
+      | Some content_type ->
+          request##setRequestHeader
+            (Js.string "Content-type", Js.string content_type);
+  );
+  (
+    match content with
+      | None ->
+          request##send(Js.null)
+      | Some content ->
+          request##send(Js.some (Js.string content))
+  );
+  let handler =
+    Html.handler @@ fun () ->
+    f {
+      code = request##status;
+      content = Js.to_string request##responseText;
+    }
+  in
+  request##onload <- handler

@@ -469,3 +469,21 @@ val delay: float -> (unit -> unit) -> unit
 
 (** Get the current time in milliseconds. *)
 val now: unit -> float
+
+(** HTTP responses given in callbacks of [http_request]. *)
+type http_response =
+  {
+    code: int; (** Status code, e.g. [200]. *)
+    content: string;
+  }
+
+(** Perform an HTTP request and call a function once it is done.
+
+    Default [verb] is ["GET"]. *)
+val http_request:
+  ?verb: string ->
+  url: string ->
+  ?content_type: string ->
+  ?content: string ->
+  (http_response -> unit) ->
+  unit
