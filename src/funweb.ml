@@ -1020,6 +1020,9 @@ struct
     (* in *)
     Text node
 
+  let empty =
+    text ""
+
   let img ?c ?alt ?title src =
     let node = Dom_html.(createImg document) in
     node##src <- Js.string src;

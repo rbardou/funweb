@@ -330,6 +330,9 @@ sig
   (** Make a text node with no [<tag>]. *)
   val text: string -> t
 
+  (** Same as [text ""]. *)
+  val empty: t
+
   (** Make an image node ([<img>]). *)
   val img: ?c: string -> ?alt: string -> ?title: string -> string -> t
 
