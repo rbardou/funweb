@@ -751,6 +751,9 @@ struct
     create save typ default
       (Group { group_name; attachments = Hashtbl.create 8 })
 
+  let volatile x =
+    single Volatile (custom (fun _ -> assert false) (fun _ -> assert false)) x
+
   let url_hash_must_be_updated = ref false
 
   let want_to_save ~refresh_only property =

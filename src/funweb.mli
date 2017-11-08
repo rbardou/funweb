@@ -239,6 +239,9 @@ sig
       The [name] is used to identify the radio button group. *)
   val group: string -> save -> 'a typ -> 'a -> ('a, group) t
 
+  (** Create a [Volatile], [single] property for a custom type. *)
+  val volatile: 'a -> ('a, single) t
+
   (** Get the current value of a property. *)
   val get: ('a, 'b) t -> 'a
 
