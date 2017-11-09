@@ -1202,12 +1202,19 @@ struct
   let input_text_gen (type a) _type
       (a_of_string: string -> a option)
       (string_of_a: a -> string)
-      ?c ?(mode = On_input) (property: (a, single) Property.t) =
+      ?c ?(mode = On_input) ?placeholder (property: (a, single) Property.t) =
     let node =
       input _type ?c property @@ fun node new_value ->
       node##value <- Js.string (string_of_a new_value)
     in
     node##value <- Js.string (string_of_a property.value);
+    (
+      match placeholder with
+        | None ->
+            ()
+        | Some placeholder ->
+            node##placeholder <- Js.string placeholder
+    );
     let on_update () =
       opt_iter (a_of_string (Js.to_string node##value)) @@ fun value ->
       Property.set_and_update_dynamics property value

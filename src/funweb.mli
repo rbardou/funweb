@@ -418,22 +418,22 @@ sig
     | On_change
 
   (** Make an input node ([<input>]) with the [text] type. *)
-  val input_text: ?c: string -> ?mode: update_mode ->
+  val input_text: ?c: string -> ?mode: update_mode -> ?placeholder: string ->
     (string, single) Property.t -> t
 
   (** Same as [input_text] but only set the property
       if the text can be converted to an int. *)
-  val input_int: ?c: string -> ?mode: update_mode ->
+  val input_int: ?c: string -> ?mode: update_mode -> ?placeholder: string ->
     (int, single) Property.t -> t
 
   (** Same as [input_text] but only set the property
       if the text can be converted to a float. *)
-  val input_float: ?c: string -> ?mode: update_mode ->
+  val input_float: ?c: string -> ?mode: update_mode -> ?placeholder: string ->
     (float, single) Property.t -> t
 
   (** Make an input node ([<input>]) with the [password] type. *)
   val input_password: ?c: string -> ?mode: update_mode ->
-    (string, single) Property.t -> t
+    ?placeholder: string -> (string, single) Property.t -> t
 
   (** Make an input node ([<input>]) with the [checkbox] type. *)
   val input_checkbox: ?c: string -> (bool, single) Property.t -> t
