@@ -304,6 +304,7 @@ type node =
   | Span of Dom_html.element Js.t
   | Form of Dom_html.formElement Js.t
   | Input of Dom_html.inputElement Js.t
+  | Textarea of Dom_html.textAreaElement Js.t
 
 let as_node = function
   | Text x -> (x :> Dom.node Js.t)
@@ -330,6 +331,7 @@ let as_node = function
   | Span x -> (x :> Dom.node Js.t)
   | Form x -> (x :> Dom.node Js.t)
   | Input x -> (x :> Dom.node Js.t)
+  | Textarea x -> (x :> Dom.node Js.t)
 
 (* Each dynamic start with [up_to_date] set to [true].
    Properties on which it depends have an observer which sets
@@ -1004,6 +1006,10 @@ struct
     opt_iter on_submit @@ fun h ->
     node##onsubmit <- handler h
 
+  let set_placeholder node placeholder =
+    opt_iter placeholder @@ fun p ->
+    node##placeholder <- Js.string p
+
   let append_children node children =
     let append_node child =
       let _: Dom.node Js.t = node##appendChild(as_node child) in
@@ -1199,6 +1205,14 @@ struct
     | On_input
     | On_change
 
+  let set_update_event mode node on_update =
+    let set_update_event =
+      match mode with
+        | On_input -> set_on_input
+        | On_change -> set_on_change
+    in
+    set_update_event node (Some on_update)
+
   let input_text_gen (type a) _type
       (a_of_string: string -> a option)
       (string_of_a: a -> string)
@@ -1208,23 +1222,12 @@ struct
       node##value <- Js.string (string_of_a new_value)
     in
     node##value <- Js.string (string_of_a property.value);
-    (
-      match placeholder with
-        | None ->
-            ()
-        | Some placeholder ->
-            node##placeholder <- Js.string placeholder
-    );
+    set_placeholder node placeholder;
     let on_update () =
       opt_iter (a_of_string (Js.to_string node##value)) @@ fun value ->
       Property.set_and_update_dynamics property value
     in
-    let set_update_event =
-      match mode with
-        | On_input -> set_on_input
-        | On_change -> set_on_change
-    in
-    set_update_event node (Some on_update);
+    set_update_event mode node on_update;
     Input node
 
   let id x = x
@@ -1300,6 +1303,34 @@ struct
     in
     set_on_click node (Some on_click);
     Input node
+
+  let textarea ?c ?(mode = On_input) ?placeholder
+      (property: (string, single) Property.t) =
+    let node =
+      match property.kind with
+        | Property.Single single ->
+            match single.attachment with
+              | Some { node = Textarea node } ->
+                  (* Reuse existing node. *)
+                  node
+              | _ ->
+                  let node = Dom_html.(createTextarea document) in
+                  let on_set new_value = node##value <- Js.string new_value in
+                  single.attachment <-
+                    Some {
+                      on_set = on_set;
+                      node = Textarea node;
+                    };
+                  set_class node c;
+                  node
+    in
+    set_placeholder node placeholder;
+    let on_update () =
+      let value = Js.to_string node##value in
+      Property.set_and_update_dynamics property value
+    in
+    set_update_event mode node on_update;
+    Textarea node
 
   let dynamic ?deps rebuild =
     let deps =

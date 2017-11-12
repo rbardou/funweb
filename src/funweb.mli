@@ -442,6 +442,10 @@ sig
   val input_radio: ?c: string -> ?on_click: (unit -> unit) ->
     ('a, group) Property.t -> 'a -> t
 
+  (** Make a textarea node ([<textarea>]). *)
+  val textarea: ?c: string -> ?mode: update_mode -> ?placeholder: string ->
+    (string, single) Property.t -> t
+
   (** {2 Rebuildable Nodes} *)
 
   (** Make a node which depends on the value of some properties.
