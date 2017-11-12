@@ -442,6 +442,10 @@ sig
   val input_radio: ?c: string -> ?on_click: (unit -> unit) ->
     ('a, group) Property.t -> 'a -> t
 
+  (** Make an input node ([<input>]) with the [submit] type.
+      Use the [on_submit] event of the form to handle clicks. *)
+  val input_submit: ?c: string -> string -> t
+
   (** Make a textarea node ([<textarea>]). *)
   val textarea: ?c: string -> ?mode: update_mode -> ?placeholder: string ->
     (string, single) Property.t -> t

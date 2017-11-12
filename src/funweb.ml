@@ -1304,6 +1304,12 @@ struct
     set_on_click node (Some on_click);
     Input node
 
+  let input_submit ?c value =
+    let node = Dom_html.(createInput ~_type: (Js.string "submit") document) in
+    node##value <- Js.string value;
+    set_class node c;
+    Input node
+
   let textarea ?c ?(mode = On_input) ?placeholder
       (property: (string, single) Property.t) =
     let node =
