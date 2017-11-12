@@ -1029,12 +1029,13 @@ struct
   let empty =
     text ""
 
-  let img ?c ?alt ?title src =
+  let img ?c ?alt ?title ?on_click src =
     let node = Dom_html.(createImg document) in
     node##src <- Js.string src;
     set_class node c;
     opt_iter alt (fun x -> node##alt <- Js.string x);
     opt_iter title (fun x -> node##title <- Js.string x);
+    set_on_click node on_click;
     Img node
 
   let a ?c ?href ?on_click children =

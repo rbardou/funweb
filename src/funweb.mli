@@ -334,7 +334,8 @@ sig
   val empty: t
 
   (** Make an image node ([<img>]). *)
-  val img: ?c: string -> ?alt: string -> ?title: string -> string -> t
+  val img: ?c: string -> ?alt: string -> ?title: string ->
+    ?on_click: (unit -> unit) -> string -> t
 
   (** Make an anchor (i.e. link) node ([<a>]). *)
   val a: ?c: string -> ?href: string -> ?on_click: (unit -> unit) -> t list -> t
