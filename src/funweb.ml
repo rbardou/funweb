@@ -1143,10 +1143,11 @@ struct
     set_class node c;
     Th node
 
-  let td ?c children =
+  let td ?c ?on_click children =
     let node = Dom_html.(createTd document) in
     append_children node children;
     set_class node c;
+    set_on_click node on_click;
     Td node
 
   let div ?c ?style ?on_click ?on_mouse_over ?on_mouse_move ?on_mouse_out

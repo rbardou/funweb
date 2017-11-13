@@ -389,7 +389,7 @@ sig
   val th: ?c: string -> t list -> t
 
   (** Make a table data node ([<td>]). *)
-  val td: ?c: string -> t list -> t
+  val td: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
 
   (** Make a block group node ([<div>]). *)
   val div: ?c: string -> ?style: Style.t -> ?on_click: (unit -> unit) ->
