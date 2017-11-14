@@ -964,9 +964,25 @@ struct
     opt_iter c (fun x -> node##className <- Js.string x)
 
   let handler_arg f =
-    Dom.handler @@ fun x ->
+    Dom.handler @@ fun event ->
     let continue =
-      match f x with
+      match f event with
+        | exception Stop ->
+            (* Stop propagation. *)
+            Dom_html.stopPropagation event;
+            (* Prevent default action. *)
+            Js._false
+        | _ ->
+            Js._true
+    in
+    run_after_event_triggers ();
+    continue
+
+  (* Used with progress events. *)
+  let progress_handler_arg f =
+    Dom.handler @@ fun event ->
+    let continue =
+      match f event with
         | exception Stop ->
             Js._false
         | _ ->
@@ -977,6 +993,9 @@ struct
 
   let handler f =
     handler_arg (fun _ -> f ())
+
+  let progress_handler f =
+    progress_handler_arg (fun _ -> f ())
 
   let set_on_click node on_click =
     opt_iter on_click @@ fun h ->
@@ -1431,7 +1450,7 @@ let http_request ?(verb = "GET") ~url ?content_type ?content f =
           request##send(Js.some (Js.string content))
   );
   let handler =
-    Html.handler @@ fun () ->
+    Html.progress_handler @@ fun () ->
     f {
       code = request##status;
       content = Js.to_string request##responseText;
