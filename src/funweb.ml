@@ -1165,11 +1165,19 @@ struct
     set_on_click node on_click;
     Th node
 
-  let td ?c ?on_click children =
+  let td ?c ?colspan ?rowspan ?on_click children =
     let node = Dom_html.(createTd document) in
     append_children node children;
     set_class node c;
     set_on_click node on_click;
+    (
+      opt_iter colspan @@ fun colspan ->
+      node##colSpan <- colspan
+    );
+    (
+      opt_iter rowspan @@ fun rowspan ->
+      node##rowSpan <- rowspan
+    );
     Td node
 
   let div ?c ?style ?on_click ?on_mouse_over ?on_mouse_move ?on_mouse_out
