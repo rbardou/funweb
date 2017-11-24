@@ -1126,10 +1126,11 @@ struct
     set_class node c;
     Li node
 
-  let table ?c children =
+  let table ?c ?on_click children =
     let node = Dom_html.(createTable document) in
     append_children node children;
     set_class node c;
+    set_on_click node on_click;
     Table node
 
   let thead ?c children =
@@ -1150,16 +1151,18 @@ struct
     set_class node c;
     Tfoot node
 
-  let tr ?c children =
+  let tr ?c ?on_click children =
     let node = Dom_html.(createTr document) in
     append_children node children;
     set_class node c;
+    set_on_click node on_click;
     Tr node
 
-  let th ?c children =
+  let th ?c ?on_click children =
     let node = Dom_html.(createTh document) in
     append_children node children;
     set_class node c;
+    set_on_click node on_click;
     Th node
 
   let td ?c ?on_click children =

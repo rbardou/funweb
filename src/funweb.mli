@@ -371,7 +371,7 @@ sig
   val li: ?c: string -> t list -> t
 
   (** Make a table node ([<table>]). *)
-  val table: ?c: string -> t list -> t
+  val table: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
 
   (** Make a table head node ([<thead>]). *)
   val thead: ?c: string -> t list -> t
@@ -383,10 +383,10 @@ sig
   val tfoot: ?c: string -> t list -> t
 
   (** Make a table row node ([<tr>]). *)
-  val tr: ?c: string -> t list -> t
+  val tr: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
 
   (** Make a table header node ([<th>]). *)
-  val th: ?c: string -> t list -> t
+  val th: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
 
   (** Make a table data node ([<td>]). *)
   val td: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
