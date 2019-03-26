@@ -1353,6 +1353,7 @@ struct
                   node
               | _ ->
                   let node = Dom_html.(createTextarea document) in
+                  node##value <- Js.string (Property.get property);
                   let on_set new_value = node##value <- Js.string new_value in
                   single.attachment <-
                     Some {
