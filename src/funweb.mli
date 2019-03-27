@@ -406,6 +406,9 @@ sig
     ?on_mouse_out: (unit -> unit) ->
     t list -> t
 
+  (** Make a label node ([<label>]). *)
+  val label: ?c: string -> t list -> t
+
   (** Make a form group node ([<form>]). *)
   val form: ?c: string -> ?on_submit: (unit -> unit) -> t list -> t
 

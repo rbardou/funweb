@@ -302,6 +302,7 @@ type node =
   | Td of Dom_html.tableCellElement Js.t
   | Div of Dom_html.divElement Js.t
   | Span of Dom_html.element Js.t
+  | Label of Dom_html.labelElement Js.t
   | Form of Dom_html.formElement Js.t
   | Input of Dom_html.inputElement Js.t
   | Textarea of Dom_html.textAreaElement Js.t
@@ -329,6 +330,7 @@ let as_node = function
   | Td x -> (x :> Dom.node Js.t)
   | Div x -> (x :> Dom.node Js.t)
   | Span x -> (x :> Dom.node Js.t)
+  | Label x -> (x :> Dom.node Js.t)
   | Form x -> (x :> Dom.node Js.t)
   | Input x -> (x :> Dom.node Js.t)
   | Textarea x -> (x :> Dom.node Js.t)
@@ -1203,6 +1205,12 @@ struct
     set_on_mouse_out node on_mouse_out;
     Style.set node style;
     Span node
+
+  let label ?c children =
+    let node = Dom_html.(createLabel document) in
+    append_children node children;
+    set_class node c;
+    Label node
 
   let form ?c ?on_submit children =
     let node = Dom_html.(createForm document) in
