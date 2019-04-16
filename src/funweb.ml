@@ -1067,8 +1067,39 @@ struct
     set_on_click node on_click;
     A node
 
-  let button ?c ?on_click children =
-    let node = Dom_html.(createButton document) in
+  let button ?c ?on_click ?(disabled = false) ?state children =
+    let node =
+      match state with
+        | None ->
+            Dom_html.(createButton document)
+        | Some { Property.kind = Property.Single single } ->
+            match single.attachment with
+              | Some { node = Button node } ->
+                  (* Reuse existing node. *)
+                  node
+              | _ ->
+                  let node = Dom_html.(createButton document) in
+                  single.attachment <-
+                    Some {
+                      on_set = (fun () -> ());
+                      node = Button node;
+                    };
+                  node
+    in
+    node##disabled <- Js.bool disabled;
+
+    (* Remove all children, as we may be reusing an existing button. *)
+    let old_children = node##childNodes in
+    let rec loop i =
+      if i >= 0 then (
+        let item = old_children##item(i) in
+        Js.Opt.iter item @@ fun item ->
+        let _: Dom.node Js.t = node##removeChild(item) in
+        loop (i - 1)
+      )
+    in
+    loop (old_children##length - 1);
+
     append_children node children;
     set_class node c;
     set_on_click node on_click;

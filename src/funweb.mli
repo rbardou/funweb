@@ -340,8 +340,14 @@ sig
   (** Make an anchor (i.e. link) node ([<a>]). *)
   val a: ?c: string -> ?href: string -> ?on_click: (unit -> unit) -> t list -> t
 
-  (** Make a button node ([<button>]). *)
-  val button: ?c: string -> ?on_click: (unit -> unit) -> t list -> t
+  (** Make a button node ([<button>]).
+
+      If it may be the case that the button is regenerated between
+      a mouse down and a mouse up event, you should give a [state] property.
+      Otherwise, click events may be lost. Simply declare a global variable
+      containing [Property.volatile ()] and give it as [state]. *)
+  val button: ?c: string -> ?on_click: (unit -> unit) ->
+    ?disabled: bool -> ?state: (unit, single) Property.t -> t list -> t
 
   (** Make a paragraph node ([<p>]). *)
   val p: ?c: string -> t list -> t
