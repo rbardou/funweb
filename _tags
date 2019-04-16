@@ -1,4 +1,4 @@
 true: debug
 true: package(js_of_ocaml)
-true: package(js_of_ocaml.syntax), syntax(camlp4o)
+true: package(js_of_ocaml-camlp4), syntax(camlp4o)
 true: warn(-40)
