@@ -320,6 +320,143 @@ sig
   val screen_y: t -> int
 end
 
+module Canvas:
+sig
+  (** 2D canvas rendering contexts. *)
+
+  (** 2D canvas rendering contexts (see [Html.canvas]). *)
+  type t
+
+  (** {2 Brush Properties} *)
+
+  (** Set fill style to a plain color. *)
+  val set_fill_color: t -> r: int -> g: int -> b: int -> unit
+
+  (** Set stroke style to a plain color. *)
+  val set_stroke_color: t -> r: int -> g: int -> b: int -> unit
+
+  (** Line cap defines how lines end. *)
+  type line_cap =
+    | Butt (** Add a flat edge at the end of the line (default). *)
+    | Round (** Add a rounded end cap at the end of the line. *)
+    | Square (** Add a squared end cap at the end of the line. *)
+
+  (** Set the current line cap. *)
+  val set_line_cap: t -> line_cap -> unit
+
+  (** Line join defines how lines end. *)
+  type line_join =
+    | Bevel (** Corners are beveled. *)
+    | Round (** Corners are rounded. *)
+    | Miter (** Corners are sharp (default). *)
+
+  (** Set the current line join. *)
+  val set_line_join: t -> line_join -> unit
+
+  (** Set stroke width. *)
+  val set_line_width: t -> float -> unit
+
+  (** Set the maximum length of [Miter] line joins. *)
+  val set_miter_limit: t -> float -> unit
+
+  (** {2 Rectangles} *)
+
+  (** Draw a rectangle (filled). *)
+  val fill_rect: t -> x: float -> y: float -> w: float -> h: float -> unit
+
+  (** Draw a rectangle (not filled). *)
+  val stroke_rect: t -> x: float -> y: float -> w: float -> h: float -> unit
+
+  (** Clear a rectangle. *)
+  val clear_rect: t -> x: float -> y: float -> w: float -> h: float -> unit
+
+  (** {2 Paths} *)
+
+  (** Draw the current path (filled). *)
+  val fill: t -> unit
+
+  (** Draw the current path (not filled). *)
+  val stroke: t -> unit
+
+  (** Begin a path, or reset the current path. *)
+  val begin_path: t -> unit
+
+  (** Move path without creating a line. *)
+  val move_to: t -> x: float -> y: float -> unit
+
+  (** Close path by creating a line to the starting point. *)
+  val close_path: t -> unit
+
+  (** Create a new point, and create a line from the previous point to this new point. *)
+  val line_to: t -> x: float -> y: float -> unit
+
+  (** Create a quadratic Bezier curve.
+
+      [(cx, cy)] are the coordinates of the control point.
+      [(x, y)] are the coordinates of the end point. *)
+  val quadratic_curve_to: t -> cx: float -> cy: float -> x: float -> y: float -> unit
+
+  (** Create a cubic Bezier curve.
+
+      [(c1x, c1y)] are the coordinates of the first control point (near the beginning).
+      [(c2x, c2y)] are the coordinates of the second control point (near the end).
+      [(x, y)] are the coordinates of the end point. *)
+  val bezier_curve_to: t -> c1x: float -> c1y: float -> c2x: float -> c2y: float -> x: float -> y: float -> unit
+
+  (** Create an arc (circle or part of a circle).
+
+      [(x, y)] are the coordinates of the center of the circle.
+      [r] is the radius.
+      [a] is the starting angle, in radians (0 is on the right, 0.5 * pi is at the bottom).
+      [b] is the ending angle.
+      If [cc] is [true], draw the arc counter-clockwise instead of clockwise. *)
+  val arc: t -> x: float -> y: float -> r: float -> a: float -> b: float -> cc: bool -> unit
+
+  (** Draw an arc between two tangents.
+
+      The arc begins at the current point.
+      [(x1, y1)] are the coordinates of the first tangent, i.e. the corner of the arc.
+      [(x2, y2)] are the coordinates of the second tangent, i.e. the end of the arc. *)
+  val arc_to: t -> x1: float -> y1: float -> x2: float -> y2: float -> r: float -> unit
+
+  (** {2 Text} *)
+
+  (** Where to draw text relatively to its [x] coordinate. *)
+  type text_align =
+    | Start (** Text starts at specified position. *)
+    | End (** Text ends at specified position. *)
+    | Left (** Same as [Start]. *)
+    | Right (** Same as [End]. *)
+    | Center (** Center text at specified position. *)
+
+  (** Set how to place text along the [x] coordinate. *)
+  val set_text_align: t -> text_align -> unit
+
+  (** Where to draw text relatively to its [y] coordinate.
+
+      This specifies which baseline to use.
+      This baseline is then put at the requested [y] coordinate. *)
+  type text_baseline =
+    | Alphabetic (** Default. Best when drawing text using latin glyphs. *)
+    | Top (** Top of the em square. *)
+    | Hanging (** Best when drawing text using languages like Devanagari. *)
+    | Middle (** Middle of the em square. *)
+    | Ideographic (** Best when drawing text using ideographic glyphs, such as kanjis. *)
+    | Bottom (** Bottom of the bounding box. *)
+
+  (** Set how to place text along the [x] coordinate. *)
+  val set_text_baseline: t -> text_baseline -> unit
+
+  (** Measure the size that some text would take along the [x] coordinate. *)
+  val measure_text_width: t -> string -> float
+
+  (** Draw text (filled). *)
+  val fill_text: t -> string -> x: float -> y: float -> unit
+
+  (** Draw text (not filled). *)
+  val stroke_text: t -> string -> x: float -> y: float -> unit
+end
+
 module Html:
 sig
   (** HTML tree constructors. *)
@@ -460,6 +597,14 @@ sig
   (** Make a textarea node ([<textarea>]). *)
   val textarea: ?c: string -> ?mode: update_mode -> ?placeholder: string ->
     (string, single) Property.t -> t
+
+  (** Make a canvas node ([<canvas>]).
+
+      The function argument shall use its argument to draw on the canvas.
+
+      If you do not want to recreate the canvas from scratch everytime, declare a
+      global property and use it in [state]. *)
+  val canvas: ?c: string -> ?state: (unit, single) Property.t -> (Canvas.t -> unit) -> t
 
   (** {2 Rebuildable Nodes} *)
 

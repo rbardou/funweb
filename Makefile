@@ -8,10 +8,16 @@ default:
 	$(OCAMLBUILD) src/funweb.cma \
 		examples/convert.byte \
 		examples/login.byte \
-		examples/save.byte
+		examples/save.byte \
+		examples/canvas.byte
 	js_of_ocaml _build/examples/convert.byte -o _build/examples/convert.js
 	js_of_ocaml _build/examples/login.byte -o _build/examples/login.js
 	js_of_ocaml _build/examples/save.byte -o _build/examples/save.js
+	js_of_ocaml _build/examples/canvas.byte -o _build/examples/canvas.js
+
+%.example:
+	$(OCAMLBUILD) src/funweb.cma examples/$*.byte
+	js_of_ocaml _build/examples/$*.byte -o _build/examples/$*.js
 
 lib:
 	$(OCAMLBUILD) src/funweb.cma

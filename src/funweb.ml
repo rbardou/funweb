@@ -308,6 +308,7 @@ type node =
   | Form of Dom_html.formElement Js.t
   | Input of Dom_html.inputElement Js.t
   | Textarea of Dom_html.textAreaElement Js.t
+  | Canvas of Dom_html.canvasElement Js.t
 
 let as_node = function
   | Text x -> (x :> Dom.node Js.t)
@@ -336,6 +337,7 @@ let as_node = function
   | Form x -> (x :> Dom.node Js.t)
   | Input x -> (x :> Dom.node Js.t)
   | Textarea x -> (x :> Dom.node Js.t)
+  | Canvas x -> (x :> Dom.node Js.t)
 
 (* Each dynamic start with [up_to_date] set to [true].
    Properties on which it depends have an observer which sets
@@ -958,6 +960,179 @@ struct
   let screen_y (ev: t) = ev##screenY
 end
 
+module Canvas =
+struct
+  type t = Dom_html.canvasRenderingContext2D Js.t
+
+  let hex = function
+    | 0 -> "0"
+    | 1 -> "1"
+    | 2 -> "2"
+    | 3 -> "3"
+    | 4 -> "4"
+    | 5 -> "5"
+    | 6 -> "6"
+    | 7 -> "7"
+    | 8 -> "8"
+    | 9 -> "9"
+    | 10 -> "a"
+    | 11 -> "b"
+    | 12 -> "c"
+    | 13 -> "d"
+    | 14 -> "e"
+    | 15 -> "f"
+    | i -> invalid_arg ("hex(" ^ string_of_int i ^ ")")
+
+  (* let make_color r g b = *)
+  (*   let bytes = Bytes.create 7 in *)
+  (*   Bytes.set bytes 0 '#'; *)
+  (*   Bytes.set bytes 1 (hex (r lsr 4 land 0xF)); *)
+  (*   Bytes.set bytes 2 (hex (r land 0xF)); *)
+  (*   Bytes.set bytes 3 (hex (g lsr 4 land 0xF)); *)
+  (*   Bytes.set bytes 4 (hex (g land 0xF)); *)
+  (*   Bytes.set bytes 5 (hex (b lsr 4 land 0xF)); *)
+  (*   Bytes.set bytes 6 (hex (b land 0xF)); *)
+  (*   Js.string (Bytes.unsafe_to_string bytes) *)
+
+  (* TODO: what is the most efficient way (compared with the commented version above for instance)? *)
+  let make_color r g b =
+    Js.string (
+      "#" ^
+      (hex (r lsr 4 land 0xF)) ^
+      (hex (r land 0xF)) ^
+      (hex (g lsr 4 land 0xF)) ^
+      (hex (g land 0xF)) ^
+      (hex (b lsr 4 land 0xF)) ^
+      (hex (b land 0xF))
+    )
+
+  let set_fill_color (canvas: t) ~r ~g ~b =
+    canvas##fillStyle <- make_color r g b
+
+  let set_stroke_color (canvas: t) ~r ~g ~b =
+    canvas##strokeStyle <- make_color r g b
+
+  type line_cap =
+    | Butt
+    | Round
+    | Square
+
+  let set_line_cap (canvas: t) cap =
+    let cap =
+      match cap with
+        | Butt -> "butt"
+        | Round -> "round"
+        | Square -> "square"
+    in
+    canvas##lineCap <- Js.string cap
+
+  type line_join =
+    | Bevel
+    | Round
+    | Miter
+
+  let set_line_join (canvas: t) join =
+    let join =
+      match join with
+        | Bevel -> "bevel"
+        | Round -> "round"
+        | Miter -> "miter"
+    in
+    canvas##lineJoin <- Js.string join
+
+  let set_line_width (canvas: t) w =
+    canvas##lineWidth <- w
+
+  let set_miter_limit (canvas: t) w =
+    canvas##miterLimit <- w
+
+  let fill_rect (canvas: t) ~x ~y ~w ~h =
+    canvas##fillRect(x, y, w, h)
+
+  let stroke_rect (canvas: t) ~x ~y ~w ~h =
+    canvas##strokeRect(x, y, w, h)
+
+  let clear_rect (canvas: t) ~x ~y ~w ~h =
+    canvas##clearRect(x, y, w, h)
+
+  let fill (canvas: t) =
+    canvas##fill()
+
+  let stroke (canvas: t) =
+    canvas##stroke()
+
+  let begin_path (canvas: t) =
+    canvas##beginPath()
+
+  let move_to (canvas: t) ~x ~y =
+    canvas##moveTo(x, y)
+
+  let close_path (canvas: t) =
+    canvas##closePath()
+
+  let line_to (canvas: t) ~x ~y =
+    canvas##lineTo(x, y)
+
+  let quadratic_curve_to (canvas: t) ~cx ~cy ~x ~y =
+    canvas##quadraticCurveTo(cx, cy, x, y)
+
+  let bezier_curve_to (canvas: t) ~c1x ~c1y ~c2x ~c2y ~x ~y =
+    canvas##bezierCurveTo(c1x, c1y, c2x, c2y, x, y)
+
+  let arc (canvas: t) ~x ~y ~r ~a ~b ~cc =
+    canvas##arc(x, y, r, a, b, Js.bool cc)
+
+  let arc_to (canvas: t) ~x1 ~y1 ~x2 ~y2 ~r =
+    canvas##arcTo(x1, y1, x2, y2, r)
+
+  type text_align =
+    | Start
+    | End
+    | Left
+    | Right
+    | Center
+
+  let set_text_align (canvas: t) (align: text_align) =
+    let align =
+      match align with
+        | Start -> "start"
+        | End -> "end"
+        | Left -> "left"
+        | Right -> "right"
+        | Center -> "center"
+    in
+    canvas##textAlign <- Js.string align
+
+  type text_baseline =
+    | Alphabetic
+    | Top
+    | Hanging
+    | Middle
+    | Ideographic
+    | Bottom
+
+  let set_text_baseline (canvas: t) (baseline: text_baseline) =
+    let baseline =
+      match baseline with
+        | Alphabetic -> "alphabetic"
+        | Top -> "top"
+        | Hanging -> "hanging"
+        | Middle -> "middle"
+        | Ideographic -> "ideographic"
+        | Bottom -> "bottom"
+    in
+    canvas##textBaseline <- Js.string baseline
+
+  let measure_text_width (canvas: t) text =
+    canvas##measureText(Js.string text)##width
+
+  let fill_text (canvas: t) text ~x ~y =
+    canvas##fillText(Js.string text, x, y)
+
+  let stroke_text (canvas: t) text ~x ~y =
+    canvas##strokeText(Js.string text, x, y)
+end
+
 module Html =
 struct
   type t = node
@@ -1411,6 +1586,29 @@ struct
     in
     set_update_event mode node on_update;
     Textarea node
+
+  let canvas ?c ?state draw =
+    let node =
+      match state with
+        | None ->
+            Dom_html.(createCanvas document)
+        | Some { Property.kind = Property.Single single } ->
+            match single.attachment with
+              | Some { node = Canvas node } ->
+                  (* Reuse existing node. *)
+                  node
+              | _ ->
+                  let node = Dom_html.(createCanvas document) in
+                  single.attachment <-
+                    Some {
+                      on_set = (fun () -> ());
+                      node = Canvas node;
+                    };
+                  node
+    in
+    let context = node##getContext(Dom_html._2d_) in
+    draw context;
+    Canvas node
 
   let dynamic ?deps rebuild =
     let deps =
